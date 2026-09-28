@@ -1,0 +1,48 @@
+# ==========================================
+# 1. Terraform Exclusions
+# ==========================================
+# Ignore the hidden directory containing heavy provider binaries
+terraform-ec2-cluster/.terraform/
+
+# Ignore local state files (they contain plaintext secrets and cluster metadata)
+terraform-ec2-cluster/*.tfstate
+terraform-ec2-cluster/*.tfstate.backup
+
+# Ignore lock file if you don't want strict version forcing across multiple systems
+# (Uncomment the line below if multiple developers complain about lock conflicts)
+# terraform-ec2-cluster/.terraform.lock.hcl
+
+# Ignore variable files containing active secret tokens or AWS keys
+terraform-ec2-cluster/*.tfvars
+terraform-ec2-cluster/*.tfvars.json
+
+
+# ==========================================
+# 2. Ansible Exclusions
+# ==========================================
+# Ignore auto-generated retry files when a playbook run fails
+ansible/*.retry
+ansible/**/*.retry
+
+# Ignore execution log dumps
+ansible/*.log
+ansible/**/*.log
+
+# Ignore plaintext vault password files if kept locally for automated runs
+ansible/.vault_password
+ansible/**/.vault_password
+
+# NOTE: Your custom roles (etcd, haproxy, patroni) will safely be tracked 
+# because they are built directly inside your repo structure. 
+# If you download community roles via ansible-galaxy later, ignore them here:
+# ansible/roles/external_community_role_name/
+
+
+# ==========================================
+# 3. System Overhead / Environment
+# ==========================================
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+.env
