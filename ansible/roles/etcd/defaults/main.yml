@@ -1,0 +1,4 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for etcd
+etcd_ver: "v3.7.1"

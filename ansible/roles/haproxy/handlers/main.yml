@@ -1,0 +1,10 @@
+#SPDX-License-Identifier: MIT-0
+---
+# handlers file for haproxy
+
+ # This handler only runs at the very end of the playbook, 
+    # and ONLY if Task 2 actually made changes to the configuration file!
+- name: Restart HAProxy
+  ansible.builtin.systemd:
+    name: haproxy
+    state: restarted

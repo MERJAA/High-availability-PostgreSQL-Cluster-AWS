@@ -1,0 +1,27 @@
+---
+# tasks file for haproxy
+
+- name: 1. Install HAProxy
+  ansible.builtin.apt:
+    name: "haproxy=3.2.9-1ubuntu2.2"
+    state: present
+  register: apt_result
+  until: apt_result is success
+  retries: 5
+  delay: 10
+
+- name: 2. Deploy dynamic HAProxy configuration
+  ansible.builtin.template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: '0644'
+    newline_sequence: '\n'
+  notify: Restart HAProxy
+
+- name: 3. Ensure HAProxy is enabled and started
+  ansible.builtin.systemd:
+    name: haproxy
+    enabled: true
+    state: started

@@ -1,0 +1,145 @@
+---
+# tasks file for etcd
+
+- name: 1. Update /etc/hosts with all nodes
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    block: |
+      {% for host in groups['etcd'] %}
+      {{ hostvars[host]['etcd_ip'] }}  {{ host }}
+      {% endfor %}
+    state: present
+    marker: "# {mark} ANSIBLE MANAGED ETCD HOSTS"
+ 
+
+- name: 2. Set system hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+  
+
+- name: 3. Update apt cache and upgrade all packages
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: yes
+  
+
+- name: 4. Install required dependencies
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - gnupg2
+      - software-properties-common
+      - python3
+      - python3-pip
+      - python3-dev
+      - python3-venv
+      - libpq-dev
+      - chrony
+      - ufw
+    state: present
+  
+
+- name: 5. Ensure chrony is enabled and started (Time sync)
+  ansible.builtin.systemd:
+    name: chrony
+    enabled: yes
+    state: started
+ 
+
+- name: 6. Create etcd system group
+  ansible.builtin.group:
+    name: etcd
+    system: yes
+    state: present
+  
+
+- name: 7. Create etcd system user
+  ansible.builtin.user:
+    name: etcd
+    group: etcd
+    system: yes
+    shell: /sbin/nologin
+    state: present
+  
+
+- name: 8. Create etcd directories and set ownership
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: etcd
+    group: etcd
+    mode: '0755'
+  loop:
+    - /var/lib/etcd
+    - /etc/etcd
+ 
+
+- name: 9. Download and extract etcd binaries to /tmp
+  ansible.builtin.unarchive:
+    src: "https://github.com/etcd-io/etcd/releases/download/{{ etcd_ver }}/etcd-{{ etcd_ver }}-linux-amd64.tar.gz"
+    dest: /tmp
+    remote_src: yes
+ 
+
+- name: 10. Move binaries to /usr/local/bin
+  ansible.builtin.copy:
+    src: "/tmp/etcd-{{ etcd_ver }}-linux-amd64/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    mode: '0755'
+    remote_src: yes
+  loop:
+    - etcd
+    - etcdctl
+    - etcdutl
+
+
+- name: 11. Generate etcd.conf.yml from Jinja template
+  ansible.builtin.template:
+    src: etcd.conf.yml.j2
+    dest: /etc/etcd/etcd.conf.yml
+    owner: etcd
+    group: etcd
+    mode: '0644'
+    newline_sequence: '\n'
+ 
+
+- name: 12. Create etcd systemd service file
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/etcd.service
+    content: |
+      [Unit]
+      Description=etcd distributed key-value store
+      After=network.target
+
+      [Service]
+      Environment=LANG=en_US.UTF-8
+      Environment=LC_ALL=en_US.UTF-8
+      Type=notify
+      User=etcd
+      Group=etcd
+      ExecStart=/usr/local/bin/etcd --config-file /etc/etcd/etcd.conf.yml
+      Restart=on-failure
+      RestartSec=5
+      LimitNOFILE=40000
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+  
+
+- name: 13. Reload systemd, enable and restart etcd
+  ansible.builtin.systemd:
+    name: etcd
+    enabled: yes
+    state: restarted
+    daemon_reload: yes
+  
+- name: 14. Verify etcd is actually running and healthy
+  ansible.builtin.command: systemctl is-active etcd
+  register: etcd_status
+  changed_when: false
+  failed_when: etcd_status.stdout != "active"
+  

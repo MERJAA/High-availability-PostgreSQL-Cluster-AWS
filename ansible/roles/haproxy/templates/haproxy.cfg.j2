@@ -1,0 +1,40 @@
+{% set primary_servers = [] %}
+{% set replica_servers = [] %}
+{% for host in groups['etcd'] %}
+{% set _ = primary_servers.append('    server ' ~ host ~ ' ' ~ hostvars[host]['etcd_ip'] ~ ':5432 maxconn 100 check port 8008') %}
+{% set _ = replica_servers.append('    server ' ~ host ~ ' ' ~ hostvars[host]['etcd_ip'] ~ ':5432 maxconn 100 check port 8008') %}
+{% endfor %}
+
+global
+    maxconn 100
+
+defaults
+    log global
+    mode tcp
+    retries 2
+    timeout client 30m
+    timeout connect 4s
+    timeout server 30m
+    timeout check 5s
+
+listen stats
+    mode http
+    bind {{ etcd_ip }}:7000
+    stats enable
+    stats uri /
+    # ADD A PASSWORD TO PROTECT YOUR TOPOLOGY DATA!
+    stats auth admin:SuperSecretPassword123            #Change the password in production
+
+listen postgres_primary
+    bind {{ etcd_ip }}:5000
+    option httpchk OPTIONS /primary
+    http-check expect status 200
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
+{{ primary_servers | join('\n') }}
+
+listen postgres_replicas
+    bind {{ etcd_ip }}:5001
+    option httpchk OPTIONS /replica
+    http-check expect status 200
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
+{{ replica_servers | join('\n') }}

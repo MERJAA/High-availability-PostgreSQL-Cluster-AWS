@@ -1,0 +1,122 @@
+---
+# tasks file for patroni
+
+- name: 1. Install PostgreSQL binaries
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ pg_version }}"
+      - "postgresql-contrib-{{ pg_version }}"
+    state: present
+
+- name: 1.5. Ensure en_US.UTF-8 locale is generated
+  ansible.builtin.locale_gen:
+    name: en_US.UTF-8
+    state: present
+
+- name: 2. Stop and disable the default auto-created PostgreSQL service
+  ansible.builtin.systemd:
+    name: postgresql
+    state: stopped
+    enabled: false
+
+- name: 3. Check if default PostgreSQL cluster exists
+  ansible.builtin.stat:
+    path: "/etc/postgresql/{{ pg_version }}/main"
+  register: pg_default_cluster
+
+- name: 4. Drop default PostgreSQL cluster (if it exists)
+  ansible.builtin.command: "pg_dropcluster --stop {{ pg_version }} main"
+  when: pg_default_cluster.stat.exists
+
+- name: 5. Install Python dependencies in a venv
+  ansible.builtin.pip:
+    name:
+      - pip
+      - "patroni[etcd3]"
+      - psycopg2-binary
+    virtualenv: /opt/patroni-venv
+    virtualenv_command: python3 -m venv
+    state: latest
+
+- name: 6. Create symbolic links for Patroni binaries
+  ansible.builtin.file:
+    src: "/opt/patroni-venv/bin/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    state: link
+  loop:
+    - patroni
+    - patronictl
+
+- name: 7. Create Patroni directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "/etc/patroni", mode: "0755" }
+    - { path: "/data/patroni", mode: "0700" }
+
+- name: 8. Generate patroni.yml from Jinja template
+  ansible.builtin.template:
+    src: patroni.yml.j2
+    dest: /etc/patroni/patroni.yml
+    owner: postgres
+    group: postgres
+    mode: '0644'
+    newline_sequence: '\n'
+
+- name: 9. Create Patroni systemd service file
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/patroni.service
+    content: |
+      [Unit]
+      Description=Patroni PostgreSQL HA
+      After=network.target etcd.service
+
+      [Service]
+      Type=simple
+      User=postgres
+      Group=postgres
+      Environment="LANG=en_US.UTF-8"
+      Environment="LC_ALL=en_US.UTF-8"
+      ExecStart=/usr/local/bin/patroni /etc/patroni/patroni.yml
+      ExecReload=/bin/kill -HUP $MAINPID
+      KillMode=process
+      TimeoutSec=30
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: 10. Reload systemd and enable Patroni (DO NOT START YET)
+  ansible.builtin.systemd:
+    name: patroni
+    enabled: true
+    daemon_reload: true
+    # Notice: NO 'state: started' here. We control startup below.
+
+- name: 11. PHASE 8a - Start Patroni on node1 FIRST
+  ansible.builtin.systemd:
+    name: patroni
+    state: started
+  when: inventory_hostname == 'node1'
+
+- name: 12. PHASE 8b - Wait for node1 to bootstrap and become Leader
+  ansible.builtin.command: patronictl -c /etc/patroni/patroni.yml list
+  register: patroni_status
+  until: "'Leader' in patroni_status.stdout and 'running' in patroni_status.stdout"
+  retries: 12
+  delay: 5
+  when: inventory_hostname == 'node1'
+  changed_when: false
+
+- name: 13. PHASE 8c - Start Patroni on node2 and node3
+  ansible.builtin.systemd:
+    name: patroni
+    state: started
+  when: inventory_hostname != 'node1'

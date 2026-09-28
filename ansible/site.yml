@@ -1,0 +1,9 @@
+- name: Deploy High Availability Database Cluster
+  hosts: etcd
+  become: true
+  gather_facts: false
+  
+  roles:
+    - etcd
+    - patroni
+    - haproxy

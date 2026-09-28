@@ -1,0 +1,37 @@
+plugin: amazon.aws.aws_ec2
+
+# Tell Ansible which region to search in
+regions:
+  - us-east-1
+  
+# FILTER: Only find servers that are running AND have a specific tag.
+# (Later, Terraform will apply the tag "Project: Patroni" to your 3 nodes)
+filters:
+  instance-state-name: running
+  tag:Project: Patroni
+  
+  
+# HOSTNAMES: By default, Ansible names AWS servers by their instance ID (i-0abcd1234). 
+# We want them named "node1", "node2", "node3". 
+# This tells Ansible to look at the AWS "Name" tag and use that as the inventory_hostname!
+hostnames:
+  - tag:Name
+
+
+# KEYED GROUPS: This creates the [etcd] group dynamically.
+# If an EC2 instance has a tag "Role: etcd", it goes into the [etcd] group.
+keyed_groups:
+  - key: tags.Role
+    prefix: ""
+    separator: ""
+    
+    
+
+# COMPOSE: This injects our custom variables based on AWS data.
+compose:
+  # Tell Ansible to connect using the AWS Private IP
+  ansible_host: instance_id
+  # Inject the etcd_ip variable so our Jinja2 templates still work perfectly!
+  etcd_ip: private_ip_address
+  
+  etcd_name: tags.EtcdName
