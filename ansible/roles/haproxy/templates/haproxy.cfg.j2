@@ -23,7 +23,7 @@ listen stats
     stats enable
     stats uri /
     # ADD A PASSWORD TO PROTECT YOUR TOPOLOGY DATA!
-    stats auth admin:SuperSecretPassword123            #Change the password in production
+    stats auth admin:"{{ haproxy_stats_password }}"           #Change the password in production
 
 listen postgres_primary
     bind {{ etcd_ip }}:5000

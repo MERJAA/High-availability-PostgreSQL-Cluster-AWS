@@ -41,16 +41,16 @@ bootstrap:
 
   users:
     postgres:
-      password: postgrespass123
+      password: "{{ patroni_postgres_password }}"
       options:
         - superuser
     admin:
-      password: adminpass123
+      password: "{{ patroni_admin_password }}"
       options:
         - createrole
         - createdb
     replicator:
-      password: replicatorpass123
+      password: "{{ patroni_replicator_password }}"
       options:
         - replication
 
@@ -63,13 +63,13 @@ postgresql:
   authentication:
     replication:
       username: replicator
-      password: replicatorpass123
+      password: "{{ patroni_replicator_password }}"
     superuser:
       username: postgres
-      password: postgrespass123
+      password: "{{ patroni_postgres_password }}"
     rewind:
       username: postgres
-      password: postgrespass123
+      password: "{{ patroni_postgres_password }}"
   parameters:
     unix_socket_directories: '/var/run/postgresql'
 
