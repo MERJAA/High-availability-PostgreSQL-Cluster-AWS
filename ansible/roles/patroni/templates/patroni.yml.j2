@@ -1,0 +1,75 @@
+scope: postgres-cluster
+namespace: /db/
+name: {{ inventory_hostname }}
+
+restapi:
+  listen: {{ etcd_ip }}:8008
+  connect_address: {{ etcd_ip }}:8008
+
+etcd3:
+  hosts: {% set etcd_hosts = [] %}{% for host in groups['etcd'] %}{% set _ = etcd_hosts.append(hostvars[host]['etcd_ip'] ~ ':2379') %}{% endfor %}{{ etcd_hosts | join(',') }}
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    synchronous_mode: quorum
+    synchronous_node_count: 1
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+        wal_level: replica
+        hot_standby: "on"
+        wal_keep_size: 512MB
+        max_wal_senders: 10
+        max_replication_slots: 10
+
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+
+  pg_hba:
+    - host replication replicator 127.0.0.1/32 scram-sha-256
+    - host all all 127.0.0.1/32 scram-sha-256
+{% for host in groups['etcd'] %}
+    - host replication replicator {{ hostvars[host]['etcd_ip'] }}/32 scram-sha-256
+    - host all all {{ hostvars[host]['etcd_ip'] }}/32 scram-sha-256
+{% endfor %}
+
+  users:
+    postgres:
+      options:
+        - superuser
+    replicator:
+      options:
+        - replication
+    rewind_user:
+      options:
+        # pg_rewind requires superuser privileges to read raw database files
+        - superuser 
+
+postgresql:
+  listen: {{ etcd_ip }}:5432
+  connect_address: {{ etcd_ip }}:5432
+  data_dir: /data/patroni
+  bin_dir: /usr/lib/postgresql/18/bin
+  pgpass: /tmp/pgpass
+  authentication:
+    replication:
+      username: replicator
+    superuser:
+      username: postgres
+    rewind:
+      username: rewind_user
+
+  parameters:
+    unix_socket_directories: '/var/run/postgresql'
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false

@@ -1,0 +1,13 @@
+{% set cluster_members = [] %}
+{% for host in groups['etcd'] %}
+{% set _ = cluster_members.append(hostvars[host]['etcd_name'] ~ '=http://' ~ hostvars[host]['etcd_ip'] ~ ':2380') %}
+{% endfor %}
+name: {{ etcd_name }}
+data-dir: /var/lib/etcd
+initial-cluster-state: new
+initial-cluster-token: patroni-etcd-cluster
+initial-cluster: {{ cluster_members | join(',') }}
+initial-advertise-peer-urls: http://{{ etcd_ip }}:2380
+advertise-client-urls: http://{{ etcd_ip }}:2379
+listen-peer-urls: http://0.0.0.0:2380
+listen-client-urls: http://0.0.0.0:2379
