@@ -6,7 +6,7 @@ This repository contains a complete configuration for deploying a production-gra
 
 The architecture is built from the ground up to ensure zero single points of failure, leveraging cloud infrastructure automation, robust configuration management, and AWS native security services.
 
-![AWS HA PostgreSQL Architecture Diagram](images/HA_POST_DB.drawio.svg)
+![AWS HA PostgreSQL Architecture Diagram](images/HA_POST_DB.drawio.png)
 
 *   **Complete AWS Infrastructure:** Provisioned via **Terraform**, establishing secure VPC routing, subnets, security groups, and EC2 compute instances.
 *   **High-Availability Layer:** Orchestrated using **Patroni** and **etcd** for distributed consensus, automated leader election, and seamless failover handling.
