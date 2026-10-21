@@ -30,7 +30,7 @@ jobs:
       - name: Configure AWS Credentials (TERRAFORM)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.TF_ROLE_ARN }}
+          role-to-assume: ${{ secrets.TF_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
 
@@ -54,7 +54,7 @@ jobs:
       - name: Configure AWS Credentials (ANSIBLE)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.ANSIBLE_ROLE_ARN }}
+          role-to-assume: ${{ secrets.ANSIBLE_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Python & Ansible
