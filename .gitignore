@@ -4,10 +4,14 @@
 # Ignore the hidden directory containing heavy provider binaries
 terraform-ec2-cluster/.terraform/
 terraform-backend/.terraform/
+OIDC/.terraform/
 
 # Ignore local state files (they contain plaintext secrets and cluster metadata)
 terraform-backend/*.tfstate
 terraform-backend/*.tfstate.backup
+OIDC/*.tfstate
+OIDC/*.tfstate.backup
+
 
 
 # Ignore lock file if you don't want strict version forcing across multiple systems
