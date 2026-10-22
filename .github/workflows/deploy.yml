@@ -29,9 +29,9 @@ jobs:
           # This safely fetches the exact JWT token GitHub passes to AWS
           JWT_TOKEN=$(curl -sH "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -r '.value')
 
-          # Print it chunked or obfuscated if you have strict log scanners, 
-          # but copy it out of your GitHub action log.
-          echo "$JWT_TOKEN" 
+          # Extract and decode the middle payload chunk of the JWT
+          echo "--- Decoded GitHub Token Claims ---"
+          echo "$JWT_TOKEN" | cut -d'.' -f2 | base64 --decode 2>/dev/null | jq
 
       # ==========================================
       # PHASE 1: TERRAFORM (OIDC Identity)
