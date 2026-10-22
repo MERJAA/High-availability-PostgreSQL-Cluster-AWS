@@ -28,7 +28,7 @@ jobs:
         if: failure() || true # Runs even if previous steps fail
         run: |
           # 1. Get a completely fresh token
-          LIVE_JWT=$(curl -sH "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=://amazonaws.com" | jq -r '.value')
+          LIVE_JWT=$(curl -sH "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -r '.value')
           
           # 2. Extract and print the sub claim so you can see it clearly
           echo "=== LIVE WORKFLOW CLAIMS ==="
