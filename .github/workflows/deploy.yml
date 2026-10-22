@@ -15,7 +15,7 @@ env:
 jobs:
   provision-and-configure:
     name: Terraform & Ansible Deployment
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       id-token: write
       contents: read
