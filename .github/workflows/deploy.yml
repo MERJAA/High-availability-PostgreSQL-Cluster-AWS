@@ -10,28 +10,20 @@ on:
 env:
   AWS_REGION: us-east-1
 
-permissions:
-  id-token: write
-  contents: read
 
 
 jobs:
   provision-and-configure:
     name: Terraform & Ansible Deployment
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      
-      - name: Dump GitHub OIDC Token (Temporary Debug Only!)
-        run: |
-          # This safely fetches the exact JWT token GitHub passes to AWS
-          JWT_TOKEN=$(curl -sH "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -r '.value')
-
-          # Extract and decode the middle payload chunk of the JWT
-          echo "--- Decoded GitHub Token Claims ---"
-          echo "$JWT_TOKEN" | cut -d'.' -f2 | base64 --decode 2>/dev/null | jq
+    
 
       # ==========================================
       # PHASE 1: TERRAFORM (OIDC Identity)
