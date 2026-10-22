@@ -24,14 +24,23 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Dump GitHub OIDC Token (Temporary Debug Only!)
+      - name: Automated AWS OIDC Debugger
+        if: failure() || true # Runs even if previous steps fail
         run: |
-          # This safely fetches the exact JWT token GitHub passes to AWS
-          JWT_TOKEN=$(curl -sH "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -r '.value')
-
-          # Extract and decode the middle payload chunk of the JWT
-          echo "--- Decoded GitHub Token Claims ---"
-          echo "$JWT_TOKEN" | cut -d'.' -f2 | base64 --decode 2>/dev/null | jq
+          # 1. Get a completely fresh token
+          LIVE_JWT=$(curl -sH "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=://amazonaws.com" | jq -r '.value')
+          
+          # 2. Extract and print the sub claim so you can see it clearly
+          echo "=== LIVE WORKFLOW CLAIMS ==="
+          echo "$LIVE_JWT" | cut -d'.' -f2 | base64 --decode 2>/dev/null | jq '{aud, sub, iss}'
+          
+          # 3. Attempt role assumption and catch the encoded error
+          echo "=== ATTEMPTING LIVE ROLE ASSUMPTION ==="
+          aws sts assume-role-with-web-identity \
+            --role-arn "arn:aws:iam::881893826881:role/github-actions-terraform-role" \
+            --role-session-name "RunnerDebugSession" \
+            --web-identity-token "$LIVE_JWT" \
+            --region ${{ env.AWS_REGION }}
 
       # ==========================================
       # PHASE 1: TERRAFORM (OIDC Identity)
