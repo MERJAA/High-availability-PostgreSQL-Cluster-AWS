@@ -12,12 +12,9 @@ provider "aws" {
 }
 
 
-# 1. Create the GitHub OIDC Provider in AWS
-resource "aws_iam_openid_connect_provider" "github" {
+# Instead of creating it, we tell Terraform to fetch the one you just made!
+data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
-
-  client_id_list = ["sts.amazonaws.com"]
-  thumbprint_list = ["06d927fecd0a84aeba28aad1d808139470fe95c3"]
 }
 
 # 2. Create the TERRAFORM OIDC Role 
@@ -30,7 +27,7 @@ resource "aws_iam_role" "github_terraform_role" {
         {
         "Effect": "Allow",
         "Principal": {
-            "Federated": aws_iam_openid_connect_provider.github.arn
+            "Federated": data.aws_iam_openid_connect_provider.github.arn
         },
         "Action": "sts:AssumeRoleWithWebIdentity",
         "Condition": {
@@ -58,7 +55,7 @@ resource "aws_iam_role" "github_ansible_role" {
         {
         "Effect": "Allow",
         "Principal": {
-            "Federated": aws_iam_openid_connect_provider.github.arn
+            "Federated": data.aws_iam_openid_connect_provider.github.arn
         },
         "Action": "sts:AssumeRoleWithWebIdentity",
         "Condition": {
