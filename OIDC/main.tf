@@ -35,7 +35,7 @@ resource "aws_iam_role" "github_terraform_role" {
                     "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
                 },
             "StringLike" = {
-                    "token.actions.githubusercontent.com:sub" = "repo:MERJAA/High-availability-PostgreSQL-Cluster-AWS:*"
+                    "token.actions.githubusercontent.com:sub" = "repo:MERJAA*/High-availability-PostgreSQL-Cluster-AWS*:*"
                 }
         }
         }
@@ -63,7 +63,7 @@ resource "aws_iam_role" "github_ansible_role" {
                     "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
                 },
             "StringLike" = {
-                    "token.actions.githubusercontent.com:sub" = "repo:MERJAA/High-availability-PostgreSQL-Cluster-AWS:*"
+                    "token.actions.githubusercontent.com:sub" = "repo:MERJAA*/High-availability-PostgreSQL-Cluster-AWS*:*"
                 }
         }
         }

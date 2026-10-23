@@ -37,14 +37,18 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false 
 
       - name: Terraform Init Cluster
-        working-directory: ./terraform-ec2-cluster
-        run: terraform init
+        run: |
+          cd ./terraform-ec2-cluster
+          terraform init
 
       - name: Terraform Apply Cluster
-        working-directory: ./terraform-ec2-cluster
-        run: terraform apply -auto-approve
+        run: |
+          cd ./terraform-ec2-cluster
+          terraform apply -auto-approve
 
       
         # ==========================================
@@ -70,6 +74,7 @@ jobs:
           sudo dpkg -i session-manager-plugin.deb
 
       - name: Run Ansible Playbook
-        working-directory: ./ansible
+        
         run: |
+          cd ./ansible
           ansible-playbook -i aws_ec2.yml site.yml
